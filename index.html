@@ -3,28 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Training Tracker</title>
+  <title>Training Log</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0fdf4',
-              100: '#dcfce7',
-              500: '#22c55e',
-              600: '#16a34a',
-              700: '#15803d',
-              900: '#14532d',
-            }
-          }
-        }
-      }
-    }
-  </script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
       -webkit-appearance: none;
@@ -32,120 +20,139 @@
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased pb-24 selection:bg-brand-500 selection:text-white">
+<body class="bg-zinc-950 text-zinc-100 min-h-screen antialiased selection:bg-zinc-800 selection:text-white pb-20">
 
-  <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-30 px-4 py-3">
-    <div class="max-w-xl mx-auto flex items-center justify-between">
-      <div>
-        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-          <span class="inline-block w-2.5 h-2.5 rounded-full bg-brand-500"></span>
-          Training Tracker
-        </h1>
-        <p class="text-xs text-slate-400" id="current-date-display"></p>
+  <!-- Navigation Bar -->
+  <header class="border-b border-zinc-800 bg-zinc-950 sticky top-0 z-30">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-semibold tracking-tight text-zinc-100">TRAINING LOG</span>
+        <span class="text-xs text-zinc-500" id="current-date-display"></span>
       </div>
 
-      <!-- Week Switcher -->
-      <div class="inline-flex rounded-lg bg-slate-800 p-1 border border-slate-700">
-        <button id="btn-open-week" onclick="setWeek('open')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all">
-          Open Week
+      <div class="flex items-center gap-2">
+        <button onclick="toggleHistoryView()" id="nav-history-btn" class="h-8 px-3 text-xs font-medium rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 transition">
+          History
         </button>
-        <button id="btn-close-week" onclick="setWeek('close')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all">
-          Close Week
-        </button>
+        <div class="flex rounded border border-zinc-800 bg-zinc-900 p-0.5">
+          <button id="btn-open-week" onclick="setWeek('open')" class="h-7 px-2.5 text-xs font-medium rounded transition">
+            Open Week
+          </button>
+          <button id="btn-close-week" onclick="setWeek('close')" class="h-7 px-2.5 text-xs font-medium rounded transition">
+            Close Week
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="max-w-xl mx-auto px-4 py-6 space-y-6">
+  <!-- TRACKER VIEW -->
+  <main id="workout-view" class="max-w-2xl mx-auto px-4 py-6 space-y-6">
 
-    <!-- Day Selector Tabs -->
-    <div class="flex gap-1 overflow-x-auto pb-1 scrollbar-none" id="day-selector">
-      <!-- Generated via JS -->
+    <!-- Day Selector -->
+    <div class="grid grid-cols-7 gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800" id="day-selector">
+      <!-- Injected via JS -->
     </div>
 
-    <!-- Today's Schedule Card -->
-    <div class="rounded-2xl bg-slate-800/80 border border-slate-700/80 p-5 shadow-xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+    <!-- Daily Context Overview -->
+    <section class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 space-y-3">
+      <div class="flex items-start justify-between">
         <div>
-          <span class="text-xs uppercase tracking-wider font-semibold text-brand-500" id="selected-day-label">Monday</span>
-          <h2 class="text-xl font-bold text-white" id="selected-routine-title">Upper Body & Run</h2>
+          <div class="text-xs font-medium text-zinc-400 uppercase tracking-wider" id="selected-day-label">MONDAY (OPEN WEEK)</div>
+          <h1 class="text-lg font-semibold text-zinc-100 mt-0.5" id="selected-routine-title">UPPER</h1>
         </div>
         <div class="text-right">
-          <span class="text-xs text-slate-400 block">Work Shift</span>
-          <span class="text-sm font-semibold text-amber-400" id="selected-work-shift">OFF</span>
+          <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider block">Shift</span>
+          <span class="text-xs font-mono font-medium text-zinc-300" id="selected-work-shift">OFF</span>
         </div>
       </div>
 
-      <!-- Run & Cardio Highlight -->
-      <div class="rounded-xl bg-slate-900/90 border border-slate-700/50 p-4 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Cardio / Run Protocol</span>
-          <button onclick="toggleTimerSection()" id="timer-toggle-btn" class="text-xs text-brand-500 hover:text-brand-400 font-medium">
-            Open Timer
-          </button>
+      <div class="border-t border-zinc-800/80 pt-3 flex items-start justify-between gap-4">
+        <div class="space-y-1">
+          <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider block">Cardio Protocol</span>
+          <p class="text-xs text-zinc-300 font-mono leading-relaxed" id="selected-run-protocol">1% incline, 60s jog, 90s walk, 20 minutes</p>
         </div>
-        <p class="text-sm text-slate-200" id="selected-run-protocol">1% incline, 60s jog, 90s walk, 20 minutes</p>
+        <button onclick="toggleTimerSection()" id="timer-toggle-btn" class="shrink-0 h-7 px-2.5 text-xs font-medium rounded border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition">
+          Timer
+        </button>
       </div>
-    </div>
+    </section>
 
-    <!-- Built-in Interval Timer Section (collapsible) -->
-    <div id="timer-card" class="hidden rounded-2xl bg-slate-950 border border-brand-500/30 p-5 shadow-2xl space-y-4">
+    <!-- Built-in Interval Timer -->
+    <section id="timer-card" class="hidden rounded-lg border border-zinc-700 bg-zinc-900 p-4 space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-bold text-white tracking-wide uppercase">Interval Timer</h3>
-        <span id="timer-phase-badge" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-slate-300">Ready</span>
+        <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Interval Timer</span>
+        <span id="timer-phase-badge" class="px-2 py-0.5 text-[11px] font-mono font-medium rounded bg-zinc-800 text-zinc-300 border border-zinc-700">READY</span>
       </div>
 
-      <div class="text-center py-4">
-        <div class="text-6xl font-black tracking-tight text-brand-500 font-mono" id="timer-countdown">01:00</div>
-        <div class="text-xs text-slate-400 mt-2" id="timer-phase-title">60s Jog Interval</div>
-        <div class="text-xs text-slate-500 mt-1 font-mono" id="timer-rounds-completed">Round 1 / 8</div>
+      <div class="flex items-baseline justify-between py-2 border-y border-zinc-800">
+        <div>
+          <div class="text-4xl font-semibold font-mono tracking-tight text-zinc-100" id="timer-countdown">01:00</div>
+          <div class="text-xs text-zinc-400 mt-1" id="timer-phase-title">60s Jog</div>
+        </div>
+        <div class="text-xs font-mono text-zinc-500" id="timer-rounds-completed">Round 1 / 8</div>
       </div>
 
       <div class="grid grid-cols-3 gap-2">
-        <button onclick="startTimer()" id="timer-start-btn" class="py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold tracking-wide transition">
-          START
+        <button onclick="startTimer()" class="h-8 rounded bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold transition">
+          Start
         </button>
-        <button onclick="pauseTimer()" id="timer-pause-btn" class="py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold tracking-wide transition">
-          PAUSE
+        <button onclick="pauseTimer()" class="h-8 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium border border-zinc-700 transition">
+          Pause
         </button>
-        <button onclick="resetTimer()" class="py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold tracking-wide transition">
-          RESET
+        <button onclick="resetTimer()" class="h-8 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs font-medium border border-zinc-700 transition">
+          Reset
         </button>
       </div>
-    </div>
+    </section>
 
-    <!-- Workout Logger Section -->
-    <div class="rounded-2xl bg-slate-800/80 border border-slate-700/80 p-5 shadow-xl space-y-4">
+    <!-- Exercise Log Table -->
+    <section class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-200">Exercise Log</h3>
-        <button onclick="addExerciseField()" class="text-xs text-brand-500 hover:text-brand-400 font-semibold">
+        <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Strength Exercises</span>
+        <button onclick="addExerciseField()" class="text-xs text-zinc-300 hover:text-white font-medium">
           + Add Exercise
         </button>
       </div>
 
       <div id="exercise-list" class="space-y-3">
-        <!-- Injected via JS based on selected split -->
+        <!-- Injected via JS -->
       </div>
 
-      <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
-        <span class="text-xs text-slate-400" id="save-status">Auto-saved to device</span>
-        <button onclick="saveCurrentDayLogs()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg transition">
-          Save Logs
+      <div class="pt-3 border-t border-zinc-800 flex items-center justify-between">
+        <span class="text-xs text-zinc-500" id="save-status">Saved locally</span>
+        <button onclick="completeAndSaveSession()" class="h-8 px-4 bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold rounded transition">
+          Save & Log Session
         </button>
       </div>
-    </div>
+    </section>
 
-    <!-- Notes & Daily Summary -->
-    <div class="rounded-2xl bg-slate-800/80 border border-slate-700/80 p-5 shadow-xl space-y-3">
-      <label for="daily-notes" class="block text-xs font-bold uppercase tracking-wider text-slate-200">Session Notes</label>
-      <textarea id="daily-notes" rows="3" oninput="saveNotesDebounced()" placeholder="Add notes on energy, weight adjustments, or recovery..." class="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"></textarea>
-    </div>
+    <!-- Session Notes -->
+    <section class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 space-y-2">
+      <label for="daily-notes" class="text-xs font-medium text-zinc-400 uppercase tracking-wider block">Notes</label>
+      <textarea id="daily-notes" rows="2" oninput="saveNotesDebounced()" placeholder="Record adjustments, weights, or conditions..." class="w-full rounded bg-zinc-900 border border-zinc-800 p-2.5 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-600 transition resize-none"></textarea>
+    </section>
 
   </main>
 
+  <!-- WORKOUT HISTORY VIEW -->
+  <section id="history-view" class="hidden max-w-2xl mx-auto px-4 py-6 space-y-4">
+    <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+      <div>
+        <h2 class="text-sm font-semibold text-zinc-100 uppercase tracking-wider">Logged History</h2>
+        <span class="text-xs text-zinc-500">Chronological list of completed training sessions</span>
+      </div>
+      <button onclick="toggleHistoryView()" class="h-8 px-3 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-300">
+        Back to Logger
+      </button>
+    </div>
+
+    <div id="history-records-list" class="space-y-3">
+      <!-- Injected via JS -->
+    </div>
+  </section>
+
   <script>
-    // --- Schedule Definition from Excel ---
     const scheduleData = {
       open: {
         MONDAY: { work: 'OFF', gym: 'UPPER', run: '1% incline, 60s jog, 90s walk, 20 minutes', defaultExercises: ['Incline Dumbbell Press', 'Lat Pulldown', 'Overhead Press', 'Chest Supported Row', 'Tricep Rope Pushdown'] },
@@ -170,14 +177,12 @@
     const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
     let currentWeek = localStorage.getItem('active_week') || 'open';
     
-    // Default to today's day of the week
     const dayMap = { 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY', 0: 'SUNDAY' };
     let selectedDay = dayMap[new Date().getDay()] || 'MONDAY';
 
-    // --- State Initialization ---
     function init() {
       document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('en-GB', {
-        weekday: 'long',
+        weekday: 'short',
         day: 'numeric',
         month: 'short'
       });
@@ -193,11 +198,11 @@
       const btnClose = document.getElementById('btn-close-week');
 
       if (week === 'open') {
-        btnOpen.className = 'px-3 py-1 text-xs font-semibold rounded-md bg-brand-600 text-white shadow';
-        btnClose.className = 'px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white';
+        btnOpen.className = 'h-7 px-2.5 text-xs font-medium rounded bg-zinc-800 text-zinc-100 shadow-sm';
+        btnClose.className = 'h-7 px-2.5 text-xs font-medium rounded text-zinc-400 hover:text-zinc-200';
       } else {
-        btnClose.className = 'px-3 py-1 text-xs font-semibold rounded-md bg-brand-600 text-white shadow';
-        btnOpen.className = 'px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white';
+        btnClose.className = 'h-7 px-2.5 text-xs font-medium rounded bg-zinc-800 text-zinc-100 shadow-sm';
+        btnOpen.className = 'h-7 px-2.5 text-xs font-medium rounded text-zinc-400 hover:text-zinc-200';
       }
 
       if (render) renderScheduleDetails();
@@ -210,10 +215,10 @@
       daysOfWeek.forEach(day => {
         const btn = document.createElement('button');
         const isSelected = day === selectedDay;
-        btn.className = `flex-1 min-w-[65px] py-2 text-center rounded-xl text-xs font-bold transition-all ${
+        btn.className = `py-1.5 text-center rounded text-xs font-medium transition ${
           isSelected 
-            ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30' 
-            : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+            ? 'bg-zinc-800 text-white font-semibold' 
+            : 'text-zinc-500 hover:text-zinc-300'
         }`;
         btn.textContent = day.substring(0, 3);
         btn.onclick = () => {
@@ -226,29 +231,49 @@
     }
 
     function getStorageKey() {
-      return `log_${currentWeek}_${selectedDay}`;
+      return `template_${currentWeek}_${selectedDay}`;
+    }
+
+    function getHistoryLogs() {
+      return JSON.parse(localStorage.getItem('workout_history') || '[]');
+    }
+
+    function findLastExerciseData(exerciseName) {
+      const history = getHistoryLogs();
+      for (let session of history) {
+        if (!session.exercises) continue;
+        const match = session.exercises.find(e => e.name.toLowerCase().trim() === exerciseName.toLowerCase().trim());
+        if (match) {
+          const unit = match.unit || 'kg';
+          const setsSummary = match.weight.map((w, i) => {
+            const reps = match.reps[i];
+            return (w || reps) ? `${w || 0}${unit} × ${reps || 0}` : null;
+          }).filter(Boolean).join(' | ');
+
+          if (setsSummary) {
+            return { date: session.date, summary: setsSummary };
+          }
+        }
+      }
+      return null;
     }
 
     function renderScheduleDetails() {
       const dayData = scheduleData[currentWeek][selectedDay];
       document.getElementById('selected-day-label').textContent = `${selectedDay} (${currentWeek.toUpperCase()} WEEK)`;
-      document.getElementById('selected-routine-title').textContent = dayData.gym === 'OFF' ? 'Rest Day' : dayData.gym;
+      document.getElementById('selected-routine-title').textContent = dayData.gym === 'OFF' ? 'REST DAY' : dayData.gym;
       document.getElementById('selected-work-shift').textContent = dayData.work;
       document.getElementById('selected-run-protocol').textContent = dayData.run;
 
-      // Render Exercises
       const savedData = JSON.parse(localStorage.getItem(getStorageKey()) || '{}');
       const exercises = savedData.exercises || dayData.defaultExercises.map(name => ({
         name,
-        sets: ['', '', ''],
-        reps: ['', '', ''],
+        unit: 'kg',
         weight: ['', '', ''],
-        completed: false
+        reps: ['', '', '']
       }));
 
       renderExerciseList(exercises);
-
-      // Render Notes
       document.getElementById('daily-notes').value = savedData.notes || '';
     }
 
@@ -257,29 +282,37 @@
       container.innerHTML = '';
 
       if (exercises.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-500 py-3 text-center">No strength exercises scheduled for today.</p>';
+        container.innerHTML = '<p class="text-xs text-zinc-500 py-3 text-center">No strength exercises scheduled for today.</p>';
         return;
       }
 
       exercises.forEach((ex, idx) => {
+        const unit = ex.unit || 'kg';
+        const lastPerformance = findLastExerciseData(ex.name);
         const div = document.createElement('div');
-        div.className = 'rounded-xl bg-slate-900/60 border border-slate-700/60 p-3 space-y-2';
+        div.className = 'rounded border border-zinc-800 bg-zinc-900 p-3 space-y-2';
         div.innerHTML = `
-          <div class="flex items-center justify-between">
-            <input type="text" value="${ex.name}" onchange="updateExerciseName(${idx}, this.value)" class="bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-transparent focus:border-brand-500 w-2/3" />
-            <button onclick="removeExercise(${idx})" class="text-slate-500 hover:text-rose-400 text-xs">✕</button>
+          <div class="flex items-center justify-between gap-2">
+            <input type="text" value="${ex.name}" onchange="updateExerciseName(${idx}, this.value)" class="bg-transparent text-xs font-semibold text-zinc-100 focus:outline-none border-b border-transparent focus:border-zinc-600 flex-1" />
+            <div class="flex items-center gap-1.5 shrink-0">
+              <div class="flex rounded border border-zinc-800 bg-zinc-950 p-0.5 text-[10px] font-mono">
+                <button type="button" onclick="setExerciseUnit(${idx}, 'kg')" class="px-1.5 py-0.5 rounded transition ${unit === 'kg' ? 'bg-zinc-800 text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}">kg</button>
+                <button type="button" onclick="setExerciseUnit(${idx}, 'lb')" class="px-1.5 py-0.5 rounded transition ${unit === 'lb' ? 'bg-zinc-800 text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}">lb</button>
+              </div>
+              <button onclick="removeExercise(${idx})" class="text-zinc-600 hover:text-zinc-300 text-xs px-1">✕</button>
+            </div>
           </div>
-          <div class="grid grid-cols-3 gap-2 text-center text-[11px] font-semibold text-slate-400">
-            <div>SET 1 (kg × reps)</div>
-            <div>SET 2 (kg × reps)</div>
-            <div>SET 3 (kg × reps)</div>
-          </div>
+          ${lastPerformance ? `
+            <div class="text-[11px] font-mono text-zinc-400">
+              <span class="text-zinc-500">Prev:</span> ${lastPerformance.summary} <span class="text-zinc-600">(${lastPerformance.date})</span>
+            </div>
+          ` : ''}
           <div class="grid grid-cols-3 gap-2">
             ${[0, 1, 2].map(setIdx => `
-              <div class="flex items-center gap-1 bg-slate-800 rounded-lg px-2 py-1 border border-slate-700">
-                <input type="number" placeholder="kg" value="${ex.weight[setIdx] || ''}" onchange="updateSetData(${idx}, ${setIdx}, 'weight', this.value)" class="w-1/2 bg-transparent text-center text-xs text-white focus:outline-none" />
-                <span class="text-slate-500 text-xs">×</span>
-                <input type="number" placeholder="reps" value="${ex.reps[setIdx] || ''}" onchange="updateSetData(${idx}, ${setIdx}, 'reps', this.value)" class="w-1/2 bg-transparent text-center text-xs text-white focus:outline-none" />
+              <div class="flex items-center border border-zinc-800 bg-zinc-950 rounded px-2 py-1">
+                <input type="number" placeholder="${unit}" value="${ex.weight[setIdx] || ''}" oninput="autoSaveCurrentDay()" class="w-1/2 bg-transparent text-xs font-mono text-zinc-200 text-center focus:outline-none" />
+                <span class="text-zinc-600 text-xs px-0.5">×</span>
+                <input type="number" placeholder="reps" value="${ex.reps[setIdx] || ''}" oninput="autoSaveCurrentDay()" class="w-1/2 bg-transparent text-xs font-mono text-zinc-200 text-center focus:outline-none" />
               </div>
             `).join('')}
           </div>
@@ -290,68 +323,189 @@
 
     function getCurrentLogsFromDOM() {
       const container = document.getElementById('exercise-list');
-      const rows = container.querySelectorAll('.rounded-xl');
+      const rows = container.querySelectorAll('.space-y-2');
       const exercises = [];
 
       rows.forEach(row => {
         const name = row.querySelector('input[type="text"]').value;
+        const activeUnitBtn = row.querySelector('button.bg-zinc-800');
+        const unit = activeUnitBtn ? activeUnitBtn.textContent.trim() : 'kg';
         const inputs = row.querySelectorAll('input[type="number"]');
         const weights = [inputs[0].value, inputs[2].value, inputs[4].value];
         const reps = [inputs[1].value, inputs[3].value, inputs[5].value];
-        exercises.push({ name, weight: weights, reps: reps });
+        exercises.push({ name, unit, weight: weights, reps });
       });
 
       return exercises;
     }
 
-    function saveCurrentDayLogs() {
+    function setExerciseUnit(index, unit) {
+      const exercises = getCurrentLogsFromDOM();
+      if (exercises[index]) {
+        exercises[index].unit = unit;
+      }
+      renderExerciseList(exercises);
+      autoSaveCurrentDay();
+    }
+
+    function autoSaveCurrentDay() {
       const exercises = getCurrentLogsFromDOM();
       const notes = document.getElementById('daily-notes').value;
       const key = getStorageKey();
       localStorage.setItem(key, JSON.stringify({ exercises, notes }));
+    }
+
+    function completeAndSaveSession() {
+      const exercises = getCurrentLogsFromDOM();
+      const notes = document.getElementById('daily-notes').value;
+      const dayData = scheduleData[currentWeek][selectedDay];
+      const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      autoSaveCurrentDay();
+
+      const history = getHistoryLogs();
+      const sessionRecord = {
+        id: Date.now(),
+        date: todayDate,
+        day: selectedDay,
+        week: currentWeek,
+        routine: dayData.gym,
+        runProtocol: dayData.run,
+        exercises: exercises,
+        notes: notes
+      };
+
+      history.unshift(sessionRecord);
+      localStorage.setItem('workout_history', JSON.stringify(history));
 
       const status = document.getElementById('save-status');
-      status.textContent = 'Saved successfully!';
-      status.classList.add('text-brand-500');
+      status.textContent = 'Session logged to History';
+      status.classList.add('text-zinc-300');
       setTimeout(() => {
-        status.textContent = 'Auto-saved to device';
-        status.classList.remove('text-brand-500');
-      }, 2000);
+        status.textContent = 'Saved locally';
+        status.classList.remove('text-zinc-300');
+      }, 2500);
+
+      renderScheduleDetails();
     }
 
     let debounceTimeout;
     function saveNotesDebounced() {
       clearTimeout(debounceTimeout);
       debounceTimeout = setTimeout(() => {
-        saveCurrentDayLogs();
-      }, 800);
+        autoSaveCurrentDay();
+      }, 600);
     }
 
-    function updateExerciseName(index, val) { saveCurrentDayLogs(); }
-    function updateSetData(exIdx, setIdx, field, val) { saveCurrentDayLogs(); }
+    function updateExerciseName(index, val) { autoSaveCurrentDay(); }
 
     function addExerciseField() {
       const exercises = getCurrentLogsFromDOM();
-      exercises.push({ name: 'New Exercise', weight: ['', '', ''], reps: ['', '', ''] });
+      exercises.push({ name: 'New Exercise', unit: 'kg', weight: ['', '', ''], reps: ['', '', ''] });
       renderExerciseList(exercises);
-      saveCurrentDayLogs();
+      autoSaveCurrentDay();
     }
 
     function removeExercise(idx) {
       const exercises = getCurrentLogsFromDOM();
       exercises.splice(idx, 1);
       renderExerciseList(exercises);
-      saveCurrentDayLogs();
+      autoSaveCurrentDay();
+    }
+
+    // --- History View ---
+    function toggleHistoryView() {
+      const workoutView = document.getElementById('workout-view');
+      const historyView = document.getElementById('history-view');
+      const navBtn = document.getElementById('nav-history-btn');
+
+      if (historyView.classList.contains('hidden')) {
+        workoutView.classList.add('hidden');
+        historyView.classList.remove('hidden');
+        navBtn.textContent = 'Tracker';
+        renderHistoryList();
+      } else {
+        historyView.classList.add('hidden');
+        workoutView.classList.remove('hidden');
+        navBtn.textContent = 'History';
+        renderScheduleDetails();
+      }
+    }
+
+    function renderHistoryList() {
+      const container = document.getElementById('history-records-list');
+      const history = getHistoryLogs();
+
+      if (history.length === 0) {
+        container.innerHTML = `
+          <div class="rounded border border-zinc-800 bg-zinc-900/40 p-8 text-center text-xs text-zinc-500">
+            No saved sessions found. Log a session to record history.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = history.map(item => `
+        <div class="rounded border border-zinc-800 bg-zinc-900 p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <div>
+              <div class="text-[11px] font-mono text-zinc-400 uppercase">${item.week} week • ${item.day}</div>
+              <div class="text-xs font-semibold text-zinc-100">${item.routine}</div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-mono text-zinc-500 block">${item.date}</span>
+              <button onclick="deleteHistoryItem(${item.id})" class="text-[11px] text-zinc-500 hover:text-zinc-300">Delete</button>
+            </div>
+          </div>
+
+          ${item.exercises && item.exercises.length > 0 ? `
+            <div class="space-y-1">
+              ${item.exercises.map(ex => {
+                const unit = ex.unit || 'kg';
+                const setStrs = ex.weight.map((w, i) => {
+                  const r = ex.reps[i];
+                  return (w || r) ? `${w || 0}${unit} × ${r || 0}` : null;
+                }).filter(Boolean);
+                return `
+                  <div class="flex justify-between text-xs font-mono py-0.5 border-b border-zinc-800/40">
+                    <span class="text-zinc-300">${ex.name}</span>
+                    <span class="text-zinc-400">${setStrs.join(' | ') || '—'}</span>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : ''}
+
+          ${item.runProtocol && item.runProtocol !== 'OFF' ? `
+            <div class="text-xs font-mono text-zinc-400 pt-1">
+              <span class="text-zinc-500">Cardio:</span> ${item.runProtocol}
+            </div>
+          ` : ''}
+
+          ${item.notes ? `
+            <div class="text-xs font-mono text-zinc-500 italic pt-1">
+              Note: ${item.notes}
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    function deleteHistoryItem(id) {
+      let history = getHistoryLogs();
+      history = history.filter(item => item.id !== id);
+      localStorage.setItem('workout_history', JSON.stringify(history));
+      renderHistoryList();
     }
 
     // --- Audio Synthesis for Interval Beeps ---
-    function playBeep(freq = 600, duration = 0.2) {
+    function playBeep(freq = 600, duration = 0.15) {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
@@ -365,7 +519,7 @@
     let timerState = {
       active: false,
       intervalId: null,
-      phase: 'jog', // 'jog' (60s) or 'walk' (90s)
+      phase: 'jog',
       timeLeft: 60,
       round: 1,
       totalRounds: 8
@@ -379,7 +533,7 @@
         btn.textContent = 'Hide Timer';
       } else {
         card.classList.add('hidden');
-        btn.textContent = 'Open Timer';
+        btn.textContent = 'Timer';
       }
     }
 
@@ -393,13 +547,13 @@
       const title = document.getElementById('timer-phase-title');
       
       if (timerState.phase === 'jog') {
-        badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        badge.className = 'px-2 py-0.5 text-[11px] font-mono font-medium rounded bg-zinc-800 text-zinc-100 border border-zinc-700';
         badge.textContent = 'JOGGING';
-        title.textContent = '60s Run / Jog Phase';
+        title.textContent = '60s Jog Interval';
       } else {
-        badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30';
+        badge.className = 'px-2 py-0.5 text-[11px] font-mono font-medium rounded bg-zinc-800 text-zinc-400 border border-zinc-700';
         badge.textContent = 'WALKING';
-        title.textContent = '90s Active Recovery Walk';
+        title.textContent = '90s Recovery Walk';
       }
 
       document.getElementById('timer-rounds-completed').textContent = `Round ${timerState.round} / ${timerState.totalRounds}`;
@@ -408,18 +562,17 @@
     function startTimer() {
       if (timerState.active) return;
       timerState.active = true;
-      playBeep(800, 0.3);
+      playBeep(700, 0.2);
 
       timerState.intervalId = setInterval(() => {
         if (timerState.timeLeft > 0) {
           timerState.timeLeft--;
           if (timerState.timeLeft <= 3 && timerState.timeLeft > 0) {
-            playBeep(440, 0.1);
+            playBeep(400, 0.08);
           }
           updateTimerDisplay();
         } else {
-          // Switch phase
-          playBeep(880, 0.5);
+          playBeep(800, 0.3);
           if (timerState.phase === 'jog') {
             timerState.phase = 'walk';
             timerState.timeLeft = 90;
@@ -446,7 +599,6 @@
       updateTimerDisplay();
     }
 
-    // Run on load
     window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
