@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Training Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased pb-24 selection:bg-brand-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-30 px-4 py-3">
+    <div class="max-w-xl mx-auto flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+          Training Tracker
+        </h1>
+        <p class="text-xs text-slate-400" id="current-date-display"></p>
+      </div>
+
+      <!-- Week Switcher -->
+      <div class="inline-flex rounded-lg bg-slate-800 p-1 border border-slate-700">
+        <button id="btn-open-week" onclick="setWeek('open')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all">
+          Open Week
+        </button>
+        <button id="btn-close-week" onclick="setWeek('close')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all">
+          Close Week
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Day Selector Tabs -->
+    <div class="flex gap-1 overflow-x-auto pb-1 scrollbar-none" id="day-selector">
+      <!-- Generated via JS -->
+    </div>
+
+    <!-- Today's Schedule Card -->
+    <div class="rounded-2xl bg-slate-800/80 border border-slate-700/80 p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div>
+          <span class="text-xs uppercase tracking-wider font-semibold text-brand-500" id="selected-day-label">Monday</span>
+          <h2 class="text-xl font-bold text-white" id="selected-routine-title">Upper Body & Run</h2>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-slate-400 block">Work Shift</span>
+          <span class="text-sm font-semibold text-amber-400" id="selected-work-shift">OFF</span>
+        </div>
+      </div>
+
+      <!-- Run & Cardio Highlight -->
+      <div class="rounded-xl bg-slate-900/90 border border-slate-700/50 p-4 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-sky-400">Cardio / Run Protocol</span>
+          <button onclick="toggleTimerSection()" id="timer-toggle-btn" class="text-xs text-brand-500 hover:text-brand-400 font-medium">
+            Open Timer
+          </button>
+        </div>
+        <p class="text-sm text-slate-200" id="selected-run-protocol">1% incline, 60s jog, 90s walk, 20 minutes</p>
+      </div>
+    </div>
+
+    <!-- Built-in Interval Timer Section (collapsible) -->
+    <div id="timer-card" class="hidden rounded-2xl bg-slate-950 border border-brand-500/30 p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white tracking-wide uppercase">Interval Timer</h3>
+        <span id="timer-phase-badge" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-slate-800 text-slate-300">Ready</span>
+      </div>
+
+      <div class="text-center py-4">
+        <div class="text-6xl font-black tracking-tight text-brand-500 font-mono" id="timer-countdown">01:00</div>
+        <div class="text-xs text-slate-400 mt-2" id="timer-phase-title">60s Jog Interval</div>
+        <div class="text-xs text-slate-500 mt-1 font-mono" id="timer-rounds-completed">Round 1 / 8</div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="startTimer()" id="timer-start-btn" class="py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold tracking-wide transition">
+          START
+        </button>
+        <button onclick="pauseTimer()" id="timer-pause-btn" class="py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold tracking-wide transition">
+          PAUSE
+        </button>
+        <button onclick="resetTimer()" class="py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold tracking-wide transition">
+          RESET
+        </button>
+      </div>
+    </div>
+
+    <!-- Workout Logger Section -->
+    <div class="rounded-2xl bg-slate-800/80 border border-slate-700/80 p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-200">Exercise Log</h3>
+        <button onclick="addExerciseField()" class="text-xs text-brand-500 hover:text-brand-400 font-semibold">
+          + Add Exercise
+        </button>
+      </div>
+
+      <div id="exercise-list" class="space-y-3">
+        <!-- Injected via JS based on selected split -->
+      </div>
+
+      <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
+        <span class="text-xs text-slate-400" id="save-status">Auto-saved to device</span>
+        <button onclick="saveCurrentDayLogs()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-lg transition">
+          Save Logs
+        </button>
+      </div>
+    </div>
+
+    <!-- Notes & Daily Summary -->
+    <div class="rounded-2xl bg-slate-800/80 border border-slate-700/80 p-5 shadow-xl space-y-3">
+      <label for="daily-notes" class="block text-xs font-bold uppercase tracking-wider text-slate-200">Session Notes</label>
+      <textarea id="daily-notes" rows="3" oninput="saveNotesDebounced()" placeholder="Add notes on energy, weight adjustments, or recovery..." class="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition"></textarea>
+    </div>
+
+  </main>
+
+  <script>
+    // --- Schedule Definition from Excel ---
+    const scheduleData = {
+      open: {
+        MONDAY: { work: 'OFF', gym: 'UPPER', run: '1% incline, 60s jog, 90s walk, 20 minutes', defaultExercises: ['Incline Dumbbell Press', 'Lat Pulldown', 'Overhead Press', 'Chest Supported Row', 'Tricep Rope Pushdown'] },
+        TUESDAY: { work: 'OFF', gym: 'LOWER & CORE', run: 'OFF', defaultExercises: ['Barbell Squat', 'Romanian Deadlift', 'Leg Extension', 'Hanging Leg Raise', 'Plank'] },
+        WEDNESDAY: { work: 'OFF', gym: 'OFF', run: 'Outdoor run, 25-30 minutes, 60s run, 90s walk', defaultExercises: [] },
+        THURSDAY: { work: '2PM - CLOSE', gym: 'UPPER', run: "Farmer's walks - 3 x 40 metres", defaultExercises: ['Flat Bench Press', 'Barbell Row', 'Lateral Raise', 'Incline Bicep Curl', "Farmer's Walks (3 x 40m)"] },
+        FRIDAY: { work: '10AM - 6PM', gym: 'OFF', run: 'OFF', defaultExercises: [] },
+        SATURDAY: { work: '10AM - 8PM', gym: 'OFF', run: 'OFF', defaultExercises: [] },
+        SUNDAY: { work: '10AM - 4PM', gym: 'LOWER & CORE', run: '10 minute bike cool-down', defaultExercises: ['Bulgarian Split Squat', 'Seated Leg Curl', 'Calf Raises', 'Cable Woodchoppers'] }
+      },
+      close: {
+        MONDAY: { work: 'OFF', gym: 'UPPER', run: '1% incline, 60s jog, 90s walk, 20 minutes', defaultExercises: ['Incline Dumbbell Press', 'Lat Pulldown', 'Dumbbell Shoulder Press', 'Cable Rows', 'Bicep / Tricep Superset'] },
+        TUESDAY: { work: 'OFF', gym: 'LOWER', run: 'OFF', defaultExercises: ['Front Squat / Goblet Squat', 'Hamstring Curl', 'Walking Lunges', 'Standing Calf Raise'] },
+        WEDNESDAY: { work: 'OFF', gym: 'OFF', run: 'Outdoor run, 25-30 minutes, 60s run, 90s walk', defaultExercises: [] },
+        THURSDAY: { work: '2PM - CLOSE', gym: 'UPPER', run: "Farmer's walks - 3 x 40 metres", defaultExercises: ['Incline Barbell Bench', 'Pull-ups / Chin-ups', 'Lateral Raise', "Farmer's Walks (3 x 40m)"] },
+        FRIDAY: { work: '6PM - CLOSE', gym: 'LOWER & CORE', run: '10 minute cool down jog', defaultExercises: ['Leg Press', 'Romanian Deadlift', 'Ab Rollouts', 'Cable Crunch'] },
+        SATURDAY: { work: '2PM - CLOSE', gym: 'OFF', run: 'OFF', defaultExercises: [] },
+        SUNDAY: { work: 'OFF', gym: 'STRETCH', run: 'Light walk', defaultExercises: ['Hip Mobility Stretches', 'Hamstring Stretch', 'Thoracic Spine Openers', 'Foam Rolling'] }
+      }
+    };
+
+    const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+    let currentWeek = localStorage.getItem('active_week') || 'open';
+    
+    // Default to today's day of the week
+    const dayMap = { 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY', 0: 'SUNDAY' };
+    let selectedDay = dayMap[new Date().getDay()] || 'MONDAY';
+
+    // --- State Initialization ---
+    function init() {
+      document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'short'
+      });
+      renderDaySelector();
+      setWeek(currentWeek, false);
+    }
+
+    function setWeek(week, render = true) {
+      currentWeek = week;
+      localStorage.setItem('active_week', week);
+
+      const btnOpen = document.getElementById('btn-open-week');
+      const btnClose = document.getElementById('btn-close-week');
+
+      if (week === 'open') {
+        btnOpen.className = 'px-3 py-1 text-xs font-semibold rounded-md bg-brand-600 text-white shadow';
+        btnClose.className = 'px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white';
+      } else {
+        btnClose.className = 'px-3 py-1 text-xs font-semibold rounded-md bg-brand-600 text-white shadow';
+        btnOpen.className = 'px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white';
+      }
+
+      if (render) renderScheduleDetails();
+    }
+
+    function renderDaySelector() {
+      const container = document.getElementById('day-selector');
+      container.innerHTML = '';
+
+      daysOfWeek.forEach(day => {
+        const btn = document.createElement('button');
+        const isSelected = day === selectedDay;
+        btn.className = `flex-1 min-w-[65px] py-2 text-center rounded-xl text-xs font-bold transition-all ${
+          isSelected 
+            ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30' 
+            : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+        }`;
+        btn.textContent = day.substring(0, 3);
+        btn.onclick = () => {
+          selectedDay = day;
+          renderDaySelector();
+          renderScheduleDetails();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function getStorageKey() {
+      return `log_${currentWeek}_${selectedDay}`;
+    }
+
+    function renderScheduleDetails() {
+      const dayData = scheduleData[currentWeek][selectedDay];
+      document.getElementById('selected-day-label').textContent = `${selectedDay} (${currentWeek.toUpperCase()} WEEK)`;
+      document.getElementById('selected-routine-title').textContent = dayData.gym === 'OFF' ? 'Rest Day' : dayData.gym;
+      document.getElementById('selected-work-shift').textContent = dayData.work;
+      document.getElementById('selected-run-protocol').textContent = dayData.run;
+
+      // Render Exercises
+      const savedData = JSON.parse(localStorage.getItem(getStorageKey()) || '{}');
+      const exercises = savedData.exercises || dayData.defaultExercises.map(name => ({
+        name,
+        sets: ['', '', ''],
+        reps: ['', '', ''],
+        weight: ['', '', ''],
+        completed: false
+      }));
+
+      renderExerciseList(exercises);
+
+      // Render Notes
+      document.getElementById('daily-notes').value = savedData.notes || '';
+    }
+
+    function renderExerciseList(exercises) {
+      const container = document.getElementById('exercise-list');
+      container.innerHTML = '';
+
+      if (exercises.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 py-3 text-center">No strength exercises scheduled for today.</p>';
+        return;
+      }
+
+      exercises.forEach((ex, idx) => {
+        const div = document.createElement('div');
+        div.className = 'rounded-xl bg-slate-900/60 border border-slate-700/60 p-3 space-y-2';
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <input type="text" value="${ex.name}" onchange="updateExerciseName(${idx}, this.value)" class="bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-transparent focus:border-brand-500 w-2/3" />
+            <button onclick="removeExercise(${idx})" class="text-slate-500 hover:text-rose-400 text-xs">✕</button>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-center text-[11px] font-semibold text-slate-400">
+            <div>SET 1 (kg × reps)</div>
+            <div>SET 2 (kg × reps)</div>
+            <div>SET 3 (kg × reps)</div>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            ${[0, 1, 2].map(setIdx => `
+              <div class="flex items-center gap-1 bg-slate-800 rounded-lg px-2 py-1 border border-slate-700">
+                <input type="number" placeholder="kg" value="${ex.weight[setIdx] || ''}" onchange="updateSetData(${idx}, ${setIdx}, 'weight', this.value)" class="w-1/2 bg-transparent text-center text-xs text-white focus:outline-none" />
+                <span class="text-slate-500 text-xs">×</span>
+                <input type="number" placeholder="reps" value="${ex.reps[setIdx] || ''}" onchange="updateSetData(${idx}, ${setIdx}, 'reps', this.value)" class="w-1/2 bg-transparent text-center text-xs text-white focus:outline-none" />
+              </div>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function getCurrentLogsFromDOM() {
+      const container = document.getElementById('exercise-list');
+      const rows = container.querySelectorAll('.rounded-xl');
+      const exercises = [];
+
+      rows.forEach(row => {
+        const name = row.querySelector('input[type="text"]').value;
+        const inputs = row.querySelectorAll('input[type="number"]');
+        const weights = [inputs[0].value, inputs[2].value, inputs[4].value];
+        const reps = [inputs[1].value, inputs[3].value, inputs[5].value];
+        exercises.push({ name, weight: weights, reps: reps });
+      });
+
+      return exercises;
+    }
+
+    function saveCurrentDayLogs() {
+      const exercises = getCurrentLogsFromDOM();
+      const notes = document.getElementById('daily-notes').value;
+      const key = getStorageKey();
+      localStorage.setItem(key, JSON.stringify({ exercises, notes }));
+
+      const status = document.getElementById('save-status');
+      status.textContent = 'Saved successfully!';
+      status.classList.add('text-brand-500');
+      setTimeout(() => {
+        status.textContent = 'Auto-saved to device';
+        status.classList.remove('text-brand-500');
+      }, 2000);
+    }
+
+    let debounceTimeout;
+    function saveNotesDebounced() {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        saveCurrentDayLogs();
+      }, 800);
+    }
+
+    function updateExerciseName(index, val) { saveCurrentDayLogs(); }
+    function updateSetData(exIdx, setIdx, field, val) { saveCurrentDayLogs(); }
+
+    function addExerciseField() {
+      const exercises = getCurrentLogsFromDOM();
+      exercises.push({ name: 'New Exercise', weight: ['', '', ''], reps: ['', '', ''] });
+      renderExerciseList(exercises);
+      saveCurrentDayLogs();
+    }
+
+    function removeExercise(idx) {
+      const exercises = getCurrentLogsFromDOM();
+      exercises.splice(idx, 1);
+      renderExerciseList(exercises);
+      saveCurrentDayLogs();
+    }
+
+    // --- Audio Synthesis for Interval Beeps ---
+    function playBeep(freq = 600, duration = 0.2) {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.log('AudioContext not active');
+      }
+    }
+
+    // --- Interval Timer Logic ---
+    let timerState = {
+      active: false,
+      intervalId: null,
+      phase: 'jog', // 'jog' (60s) or 'walk' (90s)
+      timeLeft: 60,
+      round: 1,
+      totalRounds: 8
+    };
+
+    function toggleTimerSection() {
+      const card = document.getElementById('timer-card');
+      const btn = document.getElementById('timer-toggle-btn');
+      if (card.classList.contains('hidden')) {
+        card.classList.remove('hidden');
+        btn.textContent = 'Hide Timer';
+      } else {
+        card.classList.add('hidden');
+        btn.textContent = 'Open Timer';
+      }
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timerState.timeLeft / 60);
+      const seconds = timerState.timeLeft % 60;
+      document.getElementById('timer-countdown').textContent = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      const badge = document.getElementById('timer-phase-badge');
+      const title = document.getElementById('timer-phase-title');
+      
+      if (timerState.phase === 'jog') {
+        badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        badge.textContent = 'JOGGING';
+        title.textContent = '60s Run / Jog Phase';
+      } else {
+        badge.className = 'px-2.5 py-0.5 text-xs font-bold rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30';
+        badge.textContent = 'WALKING';
+        title.textContent = '90s Active Recovery Walk';
+      }
+
+      document.getElementById('timer-rounds-completed').textContent = `Round ${timerState.round} / ${timerState.totalRounds}`;
+    }
+
+    function startTimer() {
+      if (timerState.active) return;
+      timerState.active = true;
+      playBeep(800, 0.3);
+
+      timerState.intervalId = setInterval(() => {
+        if (timerState.timeLeft > 0) {
+          timerState.timeLeft--;
+          if (timerState.timeLeft <= 3 && timerState.timeLeft > 0) {
+            playBeep(440, 0.1);
+          }
+          updateTimerDisplay();
+        } else {
+          // Switch phase
+          playBeep(880, 0.5);
+          if (timerState.phase === 'jog') {
+            timerState.phase = 'walk';
+            timerState.timeLeft = 90;
+          } else {
+            timerState.phase = 'jog';
+            timerState.timeLeft = 60;
+            timerState.round++;
+          }
+          updateTimerDisplay();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      timerState.active = false;
+      clearInterval(timerState.intervalId);
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerState.phase = 'jog';
+      timerState.timeLeft = 60;
+      timerState.round = 1;
+      updateTimerDisplay();
+    }
+
+    // Run on load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
