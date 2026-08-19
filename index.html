@@ -20,7 +20,23 @@
     }
   </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen antialiased selection:bg-zinc-800 selection:text-white pb-20">
+<body class="bg-zinc-950 text-zinc-100 min-h-screen antialiased selection:bg-zinc-800 selection:text-white pb-24">
+
+  <!-- Rest Timer Floating Bar -->
+  <div id="rest-timer-bar" class="hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md bg-zinc-900 border border-zinc-700 rounded-lg p-3 shadow-2xl flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-2.5 w-2.5 rounded-full bg-zinc-400 animate-pulse"></div>
+      <div>
+        <span class="text-[10px] uppercase font-mono text-zinc-400 block" id="rest-timer-label">Rest Timer</span>
+        <span class="text-lg font-mono font-bold text-zinc-100" id="rest-timer-display">01:30</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5">
+      <button onclick="adjustRestTimer(-15)" class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded text-[11px] font-mono text-zinc-300">-15s</button>
+      <button onclick="adjustRestTimer(15)" class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 rounded text-[11px] font-mono text-zinc-300">+15s</button>
+      <button onclick="cancelRestTimer()" class="px-2.5 py-1 bg-zinc-100 hover:bg-white text-zinc-950 rounded text-xs font-semibold">Done</button>
+    </div>
+  </div>
 
   <!-- Navigation Bar -->
   <header class="border-b border-zinc-800 bg-zinc-950 sticky top-0 z-30">
@@ -73,26 +89,25 @@
           <p class="text-xs text-zinc-300 font-mono leading-relaxed" id="selected-run-protocol">1% incline, 60s jog, 90s walk, 20 minutes</p>
         </div>
         <button onclick="toggleTimerSection()" id="timer-toggle-btn" class="shrink-0 h-7 px-2.5 text-xs font-medium rounded border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition">
-          Timer
+          Run Timer
         </button>
       </div>
     </section>
 
-    <!-- Built-in Interval Timer with Configurable Controls -->
+    <!-- Built-in Running Interval Timer -->
     <section id="timer-card" class="hidden rounded-lg border border-zinc-700 bg-zinc-900 p-4 space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Interval Timer</span>
+          <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Run Intervals</span>
           <button onclick="toggleTimerSettings()" class="text-[11px] text-zinc-400 hover:text-zinc-200 underline">
-            Edit Intervals
+            Edit
           </button>
         </div>
         <span id="timer-phase-badge" class="px-2 py-0.5 text-[11px] font-mono font-medium rounded bg-zinc-800 text-zinc-300 border border-zinc-700">READY</span>
       </div>
 
-      <!-- Configurable Timer Settings Form -->
       <div id="timer-settings-panel" class="hidden border border-zinc-800 bg-zinc-950 rounded p-3 space-y-3">
-        <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Adjust Protocol Targets</div>
+        <div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Adjust Running Intervals</div>
         <div class="grid grid-cols-3 gap-2">
           <div>
             <label class="block text-[10px] text-zinc-500 mb-1">Run (sec)</label>
@@ -130,7 +145,7 @@
       </div>
     </section>
 
-    <!-- Exercise Log Table -->
+    <!-- Exercise Log Section -->
     <section class="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 space-y-4">
       <div class="flex items-center justify-between">
         <span class="text-xs font-medium text-zinc-400 uppercase tracking-wider">Strength Exercises</span>
@@ -139,7 +154,7 @@
         </button>
       </div>
 
-      <div id="exercise-list" class="space-y-3">
+      <div id="exercise-list" class="space-y-4">
         <!-- Injected via JS -->
       </div>
 
@@ -290,9 +305,9 @@
         const match = session.exercises.find(e => e.name.toLowerCase().trim() === exerciseName.toLowerCase().trim());
         if (match) {
           const unit = match.unit || 'kg';
-          const setsSummary = match.weight.map((w, i) => {
-            const reps = match.reps[i];
-            return (w || reps) ? `${w || 0}${unit} × ${reps || 0}` : null;
+          const setsSummary = match.sets.map((s) => {
+            const tag = s.isWarmup ? 'W: ' : '';
+            return (s.weight || s.reps) ? `${tag}${s.weight || 0}${unit} × ${s.reps || 0}` : null;
           }).filter(Boolean).join(' | ');
 
           if (setsSummary) {
@@ -316,12 +331,38 @@
       document.getElementById('selected-run-protocol').textContent = dayData.run;
 
       const savedData = JSON.parse(localStorage.getItem(getStorageKey()) || '{}');
-      const exercises = savedData.exercises || dayData.defaultExercises.map(name => ({
-        name,
-        unit: 'kg',
-        weight: ['', '', ''],
-        reps: ['', '', '']
-      }));
+      
+      let exercises = savedData.exercises;
+      if (!exercises) {
+        exercises = dayData.defaultExercises.map(name => ({
+          name,
+          unit: 'kg',
+          restSec: 90,
+          sets: [
+            { isWarmup: false, weight: '', reps: '' },
+            { isWarmup: false, weight: '', reps: '' },
+            { isWarmup: false, weight: '', reps: '' }
+          ]
+        }));
+      } else {
+        exercises = exercises.map(ex => {
+          if (!ex.sets && ex.weight) {
+            const newSets = ex.weight.map((w, i) => ({
+              isWarmup: false,
+              weight: w || '',
+              reps: ex.reps[i] || ''
+            }));
+            return {
+              name: ex.name,
+              unit: ex.unit || 'kg',
+              restSec: ex.restSec || 90,
+              sets: newSets.length > 0 ? newSets : [{ isWarmup: false, weight: '', reps: '' }]
+            };
+          }
+          if (!ex.restSec) ex.restSec = 90;
+          return ex;
+        });
+      }
 
       renderExerciseList(exercises);
       document.getElementById('daily-notes').value = savedData.notes || '';
@@ -336,42 +377,109 @@
         return;
       }
 
-      exercises.forEach((ex, idx) => {
+      exercises.forEach((ex, exIdx) => {
         const unit = ex.unit || 'kg';
+        const restSec = ex.restSec || 90;
         const historyList = getAllHistoryForExercise(ex.name);
         const lastPerformance = historyList.length > 0 ? historyList[0] : null;
         
         const div = document.createElement('div');
-        div.className = 'rounded border border-zinc-800 bg-zinc-900 p-3 space-y-2';
+        div.className = 'rounded border border-zinc-800 bg-zinc-900 p-3.5 space-y-3';
         div.innerHTML = `
-          <div class="flex items-center justify-between gap-2">
-            <input type="text" value="${ex.name}" onchange="updateExerciseName(${idx}, this.value)" class="bg-transparent text-xs font-semibold text-zinc-100 focus:outline-none border-b border-transparent focus:border-zinc-600 flex-1" />
-            <div class="flex items-center gap-1.5 shrink-0">
-              <div class="flex rounded border border-zinc-800 bg-zinc-950 p-0.5 text-[10px] font-mono">
-                <button type="button" onclick="setExerciseUnit(${idx}, 'kg')" class="px-1.5 py-0.5 rounded transition ${unit === 'kg' ? 'bg-zinc-800 text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}">kg</button>
-                <button type="button" onclick="setExerciseUnit(${idx}, 'lb')" class="px-1.5 py-0.5 rounded transition ${unit === 'lb' ? 'bg-zinc-800 text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}">lb</button>
+          <!-- Header Row -->
+          <div class="flex items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
+            <input type="text" value="${ex.name}" onchange="updateExerciseName(${exIdx}, this.value)" class="bg-transparent text-xs font-semibold text-zinc-100 focus:outline-none border-b border-transparent focus:border-zinc-600 flex-1" />
+            
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- Rest Time selector -->
+              <div class="flex items-center gap-1 text-[11px] font-mono text-zinc-400">
+                <span>Rest:</span>
+                <select onchange="updateExerciseRest(${exIdx}, this.value)" class="bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-xs text-zinc-200 focus:outline-none">
+                  <option value="45" ${restSec == 45 ? 'selected' : ''}>45s</option>
+                  <option value="60" ${restSec == 60 ? 'selected' : ''}>60s</option>
+                  <option value="90" ${restSec == 90 ? 'selected' : ''}>90s</option>
+                  <option value="120" ${restSec == 120 ? 'selected' : ''}>120s</option>
+                  <option value="180" ${restSec == 180 ? 'selected' : ''}>180s</option>
+                </select>
               </div>
-              <button onclick="removeExercise(${idx})" class="text-zinc-600 hover:text-zinc-300 text-xs px-1">✕</button>
+
+              <!-- Unit Toggle -->
+              <div class="flex rounded border border-zinc-800 bg-zinc-950 p-0.5 text-[10px] font-mono">
+                <button type="button" onclick="setExerciseUnit(${exIdx}, 'kg')" class="px-1.5 py-0.5 rounded transition ${unit === 'kg' ? 'bg-zinc-800 text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}">kg</button>
+                <button type="button" onclick="setExerciseUnit(${exIdx}, 'lb')" class="px-1.5 py-0.5 rounded transition ${unit === 'lb' ? 'bg-zinc-800 text-zinc-100 font-semibold' : 'text-zinc-500 hover:text-zinc-300'}">lb</button>
+              </div>
+
+              <button onclick="removeExercise(${exIdx})" class="text-zinc-600 hover:text-zinc-300 text-xs px-1">✕</button>
             </div>
           </div>
+
+          <!-- Previous Performance & Exercise History Link -->
           ${lastPerformance ? `
             <div class="flex items-center justify-between text-[11px] font-mono">
-              <div class="text-zinc-400">
+              <div class="text-zinc-400 truncate max-w-[75%]">
                 <span class="text-zinc-500">Prev:</span> ${lastPerformance.summary} <span class="text-zinc-600">(${lastPerformance.date})</span>
               </div>
-              <button type="button" onclick="openExerciseHistoryModal('${encodeURIComponent(ex.name)}')" class="text-zinc-400 hover:text-zinc-200 underline text-[11px] ml-2">
-                All Logs (${historyList.length})
+              <button type="button" onclick="openExerciseHistoryModal('${encodeURIComponent(ex.name)}')" class="text-zinc-400 hover:text-zinc-200 underline text-[11px]">
+                Logs (${historyList.length})
               </button>
             </div>
           ` : ''}
-          <div class="grid grid-cols-3 gap-2">
-            ${[0, 1, 2].map(setIdx => `
-              <div class="flex items-center border border-zinc-800 bg-zinc-950 rounded px-2 py-1">
-                <input type="number" placeholder="${unit}" value="${ex.weight[setIdx] || ''}" oninput="autoSaveCurrentDay()" class="w-1/2 bg-transparent text-xs font-mono text-zinc-200 text-center focus:outline-none" />
-                <span class="text-zinc-600 text-xs px-0.5">×</span>
-                <input type="number" placeholder="reps" value="${ex.reps[setIdx] || ''}" oninput="autoSaveCurrentDay()" class="w-1/2 bg-transparent text-xs font-mono text-zinc-200 text-center focus:outline-none" />
-              </div>
-            `).join('')}
+
+          <!-- Dynamic Sets Table -->
+          <div class="space-y-1.5">
+            <div class="grid grid-cols-12 gap-2 text-[10px] font-mono uppercase text-zinc-500 px-1">
+              <div class="col-span-2">Type</div>
+              <div class="col-span-4">Weight (${unit})</div>
+              <div class="col-span-4">Reps</div>
+              <div class="col-span-2 text-right">Timer</div>
+            </div>
+
+            ${ex.sets.map((set, setIdx) => {
+              const isWarmup = set.isWarmup;
+              return `
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <!-- Warmup / Working set button -->
+                  <div class="col-span-2">
+                    <button type="button" onclick="toggleWarmupSet(${exIdx}, ${setIdx})" class="w-full py-1 text-[10px] font-mono font-medium rounded border transition ${
+                      isWarmup 
+                        ? 'border-amber-700/60 bg-amber-950/40 text-amber-400 font-bold' 
+                        : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-200'
+                    }">
+                      ${isWarmup ? 'WARM' : `SET ${setIdx + 1}`}
+                    </button>
+                  </div>
+
+                  <!-- Weight Input -->
+                  <div class="col-span-4 flex items-center border border-zinc-800 bg-zinc-950 rounded px-2 py-1">
+                    <input type="number" placeholder="${unit}" value="${set.weight || ''}" oninput="autoSaveCurrentDay()" class="set-weight-input w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none" />
+                  </div>
+
+                  <!-- Reps Input -->
+                  <div class="col-span-4 flex items-center border border-zinc-800 bg-zinc-950 rounded px-2 py-1">
+                    <input type="number" placeholder="reps" value="${set.reps || ''}" oninput="autoSaveCurrentDay()" class="set-reps-input w-full bg-transparent text-xs font-mono text-zinc-200 focus:outline-none" />
+                  </div>
+
+                  <!-- Quick Rest Trigger -->
+                  <div class="col-span-2 flex items-center justify-end gap-1">
+                    <button type="button" onclick="startRestTimer(${restSec}, '${encodeURIComponent(ex.name)} Set ${setIdx + 1}')" title="Start rest timer" class="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-[10px] font-mono rounded transition">
+                      ⏱ ${restSec}s
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Add / Remove Set Controls -->
+          <div class="flex items-center justify-between pt-1 border-t border-zinc-800/60 text-xs">
+            <button type="button" onclick="addSetToExercise(${exIdx})" class="text-zinc-400 hover:text-zinc-100 font-mono text-[11px]">
+              + Add Set
+            </button>
+            ${ex.sets.length > 1 ? `
+              <button type="button" onclick="removeSetFromExercise(${exIdx})" class="text-zinc-600 hover:text-zinc-400 font-mono text-[11px]">
+                - Remove Set
+              </button>
+            ` : '<div></div>'}
           </div>
         `;
         container.appendChild(div);
@@ -380,20 +488,65 @@
 
     function getCurrentLogsFromDOM() {
       const container = document.getElementById('exercise-list');
-      const rows = container.querySelectorAll('.space-y-2');
+      const exCards = container.querySelectorAll('.space-y-3');
       const exercises = [];
 
-      rows.forEach(row => {
-        const name = row.querySelector('input[type="text"]').value;
-        const activeUnitBtn = row.querySelector('button.bg-zinc-800');
+      exCards.forEach(card => {
+        const name = card.querySelector('input[type="text"]').value;
+        const activeUnitBtn = card.querySelector('div.bg-zinc-950 button.bg-zinc-800');
         const unit = activeUnitBtn ? activeUnitBtn.textContent.trim() : 'kg';
-        const inputs = row.querySelectorAll('input[type="number"]');
-        const weights = [inputs[0].value, inputs[2].value, inputs[4].value];
-        const reps = [inputs[1].value, inputs[3].value, inputs[5].value];
-        exercises.push({ name, unit, weight: weights, reps });
+        const restSelect = card.querySelector('select');
+        const restSec = restSelect ? parseInt(restSelect.value, 10) : 90;
+
+        const setRows = card.querySelectorAll('.grid.grid-cols-12.items-center');
+        const sets = [];
+
+        setRows.forEach(row => {
+          const isWarmup = row.querySelector('button').textContent.trim() === 'WARM';
+          const weight = row.querySelector('.set-weight-input').value;
+          const reps = row.querySelector('.set-reps-input').value;
+          sets.push({ isWarmup, weight, reps });
+        });
+
+        exercises.push({ name, unit, restSec, sets });
       });
 
       return exercises;
+    }
+
+    function toggleWarmupSet(exIdx, setIdx) {
+      const exercises = getCurrentLogsFromDOM();
+      if (exercises[exIdx] && exercises[exIdx].sets[setIdx]) {
+        exercises[exIdx].sets[setIdx].isWarmup = !exercises[exIdx].sets[setIdx].isWarmup;
+      }
+      renderExerciseList(exercises);
+      autoSaveCurrentDay();
+    }
+
+    function addSetToExercise(exIdx) {
+      const exercises = getCurrentLogsFromDOM();
+      if (exercises[exIdx]) {
+        exercises[exIdx].sets.push({ isWarmup: false, weight: '', reps: '' });
+      }
+      renderExerciseList(exercises);
+      autoSaveCurrentDay();
+    }
+
+    function removeSetFromExercise(exIdx) {
+      const exercises = getCurrentLogsFromDOM();
+      if (exercises[exIdx] && exercises[exIdx].sets.length > 1) {
+        exercises[exIdx].sets.pop();
+      }
+      renderExerciseList(exercises);
+      autoSaveCurrentDay();
+    }
+
+    function updateExerciseRest(exIdx, val) {
+      const exercises = getCurrentLogsFromDOM();
+      if (exercises[exIdx]) {
+        exercises[exIdx].restSec = parseInt(val, 10);
+      }
+      autoSaveCurrentDay();
     }
 
     function setExerciseUnit(index, unit) {
@@ -458,7 +611,16 @@
 
     function addExerciseField() {
       const exercises = getCurrentLogsFromDOM();
-      exercises.push({ name: 'New Exercise', unit: 'kg', weight: ['', '', ''], reps: ['', '', ''] });
+      exercises.push({
+        name: 'New Exercise',
+        unit: 'kg',
+        restSec: 90,
+        sets: [
+          { isWarmup: false, weight: '', reps: '' },
+          { isWarmup: false, weight: '', reps: '' },
+          { isWarmup: false, weight: '', reps: '' }
+        ]
+      });
       renderExerciseList(exercises);
       autoSaveCurrentDay();
     }
@@ -468,6 +630,53 @@
       exercises.splice(idx, 1);
       renderExerciseList(exercises);
       autoSaveCurrentDay();
+    }
+
+    // --- Floating Exercise Rest Timer ---
+    let restTimerInterval = null;
+    let restTimeRemaining = 0;
+
+    function startRestTimer(seconds, label) {
+      clearInterval(restTimerInterval);
+      restTimeRemaining = seconds;
+
+      const bar = document.getElementById('rest-timer-bar');
+      const labelElem = document.getElementById('rest-timer-label');
+      labelElem.textContent = label ? decodeURIComponent(label) : 'Resting';
+      bar.classList.remove('hidden');
+
+      playBeep(750, 0.15);
+      updateRestTimerUI();
+
+      restTimerInterval = setInterval(() => {
+        if (restTimeRemaining > 0) {
+          restTimeRemaining--;
+          updateRestTimerUI();
+          if (restTimeRemaining <= 3 && restTimeRemaining > 0) {
+            playBeep(450, 0.08);
+          }
+        } else {
+          clearInterval(restTimerInterval);
+          playBeep(900, 0.4);
+          cancelRestTimer();
+        }
+      }, 1000);
+    }
+
+    function updateRestTimerUI() {
+      const m = Math.floor(restTimeRemaining / 60);
+      const s = restTimeRemaining % 60;
+      document.getElementById('rest-timer-display').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function adjustRestTimer(deltaSec) {
+      restTimeRemaining = Math.max(0, restTimeRemaining + deltaSec);
+      updateRestTimerUI();
+    }
+
+    function cancelRestTimer() {
+      clearInterval(restTimerInterval);
+      document.getElementById('rest-timer-bar').classList.add('hidden');
     }
 
     // --- Individual Exercise History Modal ---
@@ -550,10 +759,18 @@
             <div class="space-y-1">
               ${item.exercises.map(ex => {
                 const unit = ex.unit || 'kg';
-                const setStrs = ex.weight.map((w, i) => {
-                  const r = ex.reps[i];
-                  return (w || r) ? `${w || 0}${unit} × ${r || 0}` : null;
-                }).filter(Boolean);
+                let setStrs = [];
+                if (ex.sets) {
+                  setStrs = ex.sets.map(s => {
+                    const tag = s.isWarmup ? 'W: ' : '';
+                    return (s.weight || s.reps) ? `${tag}${s.weight || 0}${unit} × ${s.reps || 0}` : null;
+                  }).filter(Boolean);
+                } else if (ex.weight) {
+                  setStrs = ex.weight.map((w, i) => {
+                    const r = ex.reps[i];
+                    return (w || r) ? `${w || 0}${unit} × ${r || 0}` : null;
+                  }).filter(Boolean);
+                }
                 return `
                   <div class="flex justify-between text-xs font-mono py-0.5 border-b border-zinc-800/40">
                     <span class="text-zinc-300">${ex.name}</span>
@@ -657,7 +874,7 @@
         btn.textContent = 'Hide Timer';
       } else {
         card.classList.add('hidden');
-        btn.textContent = 'Timer';
+        btn.textContent = 'Run Timer';
       }
     }
 
