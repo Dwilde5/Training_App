@@ -78,8 +78,49 @@
           <h1 class="text-lg font-semibold text-zinc-100 mt-0.5" id="selected-routine-title">UPPER</h1>
         </div>
         <div class="text-right">
-          <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider block">Shift</span>
-          <span class="text-xs font-mono font-medium text-zinc-300" id="selected-work-shift">OFF</span>
+          <div class="flex items-center justify-end gap-1.5">
+            <span class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Shift</span>
+            <button onclick="toggleShiftEditor()" class="text-[11px] text-zinc-400 hover:text-zinc-200 underline">
+              Edit
+            </button>
+          </div>
+          <span class="text-xs font-mono font-medium text-zinc-300 block mt-0.5" id="selected-work-shift">OFF</span>
+        </div>
+      </div>
+
+      <!-- Work Shift Editor Panel (collapsible) -->
+      <div id="shift-editor-panel" class="hidden border border-zinc-800 bg-zinc-950 rounded p-3 space-y-3 mt-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Adjust Work Shift</span>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="shift-is-off" onchange="toggleShiftOffCheckbox(this.checked)" class="rounded border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-0" />
+            <span class="text-xs font-mono text-zinc-300">Day OFF</span>
+          </label>
+        </div>
+
+        <div id="shift-time-selectors" class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="shift-start-time" class="block text-[10px] text-zinc-500 mb-1">Start Time</label>
+            <select id="shift-start-time" onchange="saveShiftFromSelectors()" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-xs font-mono text-zinc-200 focus:outline-none focus:border-zinc-600">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div>
+            <label for="shift-end-time" class="block text-[10px] text-zinc-500 mb-1">End Time</label>
+            <select id="shift-end-time" onchange="saveShiftFromSelectors()" class="w-full bg-zinc-900 border border-zinc-800 rounded px-2 py-1.5 text-xs font-mono text-zinc-200 focus:outline-none focus:border-zinc-600">
+              <option value="CLOSE">CLOSE</option>
+              <!-- Populated via JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1 border-t border-zinc-800/80">
+          <button onclick="resetShiftToDefault()" class="text-[10px] text-zinc-500 hover:text-zinc-300 underline">
+            Reset to template default
+          </button>
+          <button onclick="toggleShiftEditor()" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded text-xs font-medium">
+            Done
+          </button>
         </div>
       </div>
 
@@ -238,15 +279,35 @@
     const dayMap = { 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY', 0: 'SUNDAY' };
     let selectedDay = dayMap[new Date().getDay()] || 'MONDAY';
 
+    // Standard hourly shift times list
+    const shiftTimeOptions = [
+      '6AM', '6:30AM', '7AM', '7:30AM', '8AM', '8:30AM', '9AM', '9:30AM', '10AM', '10:30AM',
+      '11AM', '11:30AM', '12PM', '12:30PM', '1PM', '1:30PM', '2PM', '2:30PM', '3PM', '3:30PM',
+      '4PM', '4:30PM', '5PM', '5:30PM', '6PM', '6:30PM', '7PM', '7:30PM', '8PM', '8:30PM',
+      '9PM', '9:30PM', '10PM', '10:30PM', '11PM'
+    ];
+
     function init() {
       document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('en-GB', {
         weekday: 'short',
         day: 'numeric',
         month: 'short'
       });
+      populateShiftTimeDropdowns();
       loadTimerConfig();
       renderDaySelector();
       setWeek(currentWeek, false);
+    }
+
+    function populateShiftTimeDropdowns() {
+      const startSelect = document.getElementById('shift-start-time');
+      const endSelect = document.getElementById('shift-end-time');
+
+      startSelect.innerHTML = shiftTimeOptions.map(t => `<option value="${t}">${t}</option>`).join('');
+      
+      // CLOSE is at the very top of the end times dropdown list
+      endSelect.innerHTML = `<option value="CLOSE">CLOSE</option>` + 
+        shiftTimeOptions.map(t => `<option value="${t}">${t}</option>`).join('');
     }
 
     function setWeek(week, render = true) {
@@ -293,6 +354,22 @@
       return `template_${currentWeek}_${selectedDay}`;
     }
 
+    function getCustomShift() {
+      const shifts = JSON.parse(localStorage.getItem('custom_work_shifts') || '{}');
+      const key = `${currentWeek}_${selectedDay}`;
+      if (shifts[key] !== undefined) {
+        return shifts[key];
+      }
+      return scheduleData[currentWeek][selectedDay].work;
+    }
+
+    function setCustomShift(shiftValue) {
+      const shifts = JSON.parse(localStorage.getItem('custom_work_shifts') || '{}');
+      const key = `${currentWeek}_${selectedDay}`;
+      shifts[key] = shiftValue;
+      localStorage.setItem('custom_work_shifts', JSON.stringify(shifts));
+    }
+
     function getHistoryLogs() {
       return JSON.parse(localStorage.getItem('workout_history') || '[]');
     }
@@ -325,10 +402,14 @@
 
     function renderScheduleDetails() {
       const dayData = scheduleData[currentWeek][selectedDay];
+      const activeWorkShift = getCustomShift();
+
       document.getElementById('selected-day-label').textContent = `${selectedDay} (${currentWeek.toUpperCase()} WEEK)`;
       document.getElementById('selected-routine-title').textContent = dayData.gym === 'OFF' ? 'REST DAY' : dayData.gym;
-      document.getElementById('selected-work-shift').textContent = dayData.work;
+      document.getElementById('selected-work-shift').textContent = activeWorkShift;
       document.getElementById('selected-run-protocol').textContent = dayData.run;
+
+      syncShiftEditorUI(activeWorkShift);
 
       const savedData = JSON.parse(localStorage.getItem(getStorageKey()) || '{}');
       
@@ -366,6 +447,67 @@
 
       renderExerciseList(exercises);
       document.getElementById('daily-notes').value = savedData.notes || '';
+    }
+
+    // --- Work Shift Editor Logic ---
+    function toggleShiftEditor() {
+      const panel = document.getElementById('shift-editor-panel');
+      panel.classList.toggle('hidden');
+    }
+
+    function syncShiftEditorUI(shiftValue) {
+      const isOff = shiftValue.toUpperCase() === 'OFF';
+      const offCheckbox = document.getElementById('shift-is-off');
+      const timeSelectors = document.getElementById('shift-time-selectors');
+      const startSelect = document.getElementById('shift-start-time');
+      const endSelect = document.getElementById('shift-end-time');
+
+      offCheckbox.checked = isOff;
+
+      if (isOff) {
+        timeSelectors.classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        timeSelectors.classList.remove('opacity-40', 'pointer-events-none');
+        const parts = shiftValue.split(' - ');
+        if (parts.length === 2) {
+          startSelect.value = parts[0].trim();
+          endSelect.value = parts[1].trim();
+        }
+      }
+    }
+
+    function toggleShiftOffCheckbox(isOff) {
+      const timeSelectors = document.getElementById('shift-time-selectors');
+      if (isOff) {
+        timeSelectors.classList.add('opacity-40', 'pointer-events-none');
+        setCustomShift('OFF');
+        document.getElementById('selected-work-shift').textContent = 'OFF';
+      } else {
+        timeSelectors.classList.remove('opacity-40', 'pointer-events-none');
+        saveShiftFromSelectors();
+      }
+    }
+
+    function saveShiftFromSelectors() {
+      const isOff = document.getElementById('shift-is-off').checked;
+      if (isOff) {
+        setCustomShift('OFF');
+        document.getElementById('selected-work-shift').textContent = 'OFF';
+        return;
+      }
+      const start = document.getElementById('shift-start-time').value;
+      const end = document.getElementById('shift-end-time').value;
+      const formatted = `${start} - ${end}`;
+      setCustomShift(formatted);
+      document.getElementById('selected-work-shift').textContent = formatted;
+    }
+
+    function resetShiftToDefault() {
+      const shifts = JSON.parse(localStorage.getItem('custom_work_shifts') || '{}');
+      const key = `${currentWeek}_${selectedDay}`;
+      delete shifts[key];
+      localStorage.setItem('custom_work_shifts', JSON.stringify(shifts));
+      renderScheduleDetails();
     }
 
     function renderExerciseList(exercises) {
@@ -569,6 +711,7 @@
       const exercises = getCurrentLogsFromDOM();
       const notes = document.getElementById('daily-notes').value;
       const dayData = scheduleData[currentWeek][selectedDay];
+      const activeWorkShift = getCustomShift();
       const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
       autoSaveCurrentDay();
@@ -579,6 +722,7 @@
         date: todayDate,
         day: selectedDay,
         week: currentWeek,
+        shift: activeWorkShift,
         routine: dayData.gym,
         runProtocol: dayData.run,
         exercises: exercises,
@@ -751,7 +895,8 @@
             </div>
             <div class="text-right">
               <span class="text-xs font-mono text-zinc-500 block">${item.date}</span>
-              <button onclick="deleteHistoryItem(${item.id})" class="text-[11px] text-zinc-500 hover:text-zinc-300">Delete</button>
+              ${item.shift ? `<span class="text-[11px] font-mono text-zinc-400 block">${item.shift}</span>` : ''}
+              <button onclick="deleteHistoryItem(${item.id})" class="text-[11px] text-zinc-500 hover:text-zinc-300 mt-0.5">Delete</button>
             </div>
           </div>
 
